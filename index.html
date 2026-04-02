@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode to Clipboard</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --bg: #f8fafc;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+        h2 { margin-bottom: 10px; }
+        #reader {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: none !important; /* Removes library's default border */
+        }
+        #result-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        #status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #e2e8f0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .status-success { background: #dcfce7 !important; color: #166534; }
+        #scanned-result {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            word-break: break-all;
+        }
+        .hint {
+            margin-top: 15px;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Scan to Clipboard</h2>
+    
+    <div id="reader"></div>
+
+    <div id="result-container">
+        <div id="status">Ready to Scan</div>
+        <div id="scanned-result">No barcode detected</div>
+        <p class="hint">Items are automatically copied to your clipboard.</p>
+    </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const resultEl = document.getElementById('scanned-result');
+
+        async function onScanSuccess(decodedText, decodedResult) {
+            // 1. Visual & Haptic Feedback
+            statusEl.innerText = "COPIED!";
+            statusEl.classList.add('status-success');
+            resultEl.innerText = decodedText;
+            
+            if (navigator.vibrate) navigator.vibrate(100);
+
+            // 2. Copy to Clipboard
+            try {
+                await navigator.clipboard.writeText(decodedText);
+            } catch (err) {
+                console.error('Clipboard error:', err);
+                statusEl.innerText = "Copy Failed (Tap screen once)";
+            }
+
+            // 3. Cooldown logic (pause for 2 seconds)
+            html5QrcodeScanner.pause(true); 
+            
+            setTimeout(() => {
+                statusEl.innerText = "Ready to Scan";
+                statusEl.classList.remove('status-success');
+                html5QrcodeScanner.resume();
+            }, 2000);
+        }
+
+        // Initialize Scanner
+        // Use 'side' or 'environment' for the back camera
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { 
+                fps: 20, 
+                qrbox: { width: 280, height: 180 },
+                aspectRatio: 1.0,
+                rememberLastUsedCamera: true
+            }
+        );
+
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+</body>
+</html>
